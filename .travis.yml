@@ -1,0 +1,24 @@
+sudo: required
+
+services:
+  - docker
+
+script:
+  - if [ -z "$TRAVIS_TAG" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
+    make build VERSION=master;
+    elif [ "$TRAVIS_TAG" ]; then
+    ver=${TRAVIS_TAG#"v"};
+    make build VERSION=$ver;
+    else
+    echo "Nothing to build";
+    fi;
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "aKIl0c3PL9pX8HUjAoiNQLq446WbyDP9KYs4c0b0PAJClmvdGhbLUtXV0qIIxqvEdpsAd8nugmkxsd+gxAQ7wM0AUJiXwZQJHOJluwKAJhxVJ7j/rU/aMtBSYWLwK9qoxbv9MCWma3zzEjT880gcXkEV35P5NcsGNL9wQbmblr+kAzJ+zchhvs9X03hGuQFedBjH84ab/rErZe1ur2JDqtVq/HN1qPuL3z6d/lMl9lPhnoOOdro/5JUWmFl+0ZKTJun/wFWVqCzO9TVRsC7eiiUICMU/PeESSCoobg2ILw6Bot7RT2IUb3arjkT3lRuj9+nb4hLathvInoID0jEgtWXnD94RmJL83TMggX0uQA+xl9zG17x78Pf7ruPoQ9unTwAC2ON9v2M0RnvPXg2SnU9OwYjqdntEu9J8fHKjA4tVgr+S7PPtbqfAVcvHgnhrT1Lh13+t0xF5XUlON5jicF0UmyrZw0UEtTwIYm/rTLOVXotpCOG6f/9B6tT8HiaF1PcG6On7cwSv0XCQEctb/mkI/gV79B/B1kWWYiUt4Y1y6pOnOLUj3FfStC3+8PIOQ+XcWVPqU7783j1AVeIDcwkOy8ns3fGZf/vT3pw3Xj5P2nj4kvdagdVXYlLypy4NTmma2ZU7Xhsb27GBw/8YXobpZK2akrN3NzKh+BKrpa4="
+  file: "redact/redact"
+  overwrite: true
+  skip_cleanup: true
+  on:
+    tags: true
