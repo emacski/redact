@@ -8,14 +8,14 @@ import (
 
 const (
 	// prefix for reserved env vars used to configure redact itself
-	EnvKeyPrefix = "RDCT_"
+	envKeyPrefix = "RDCT_"
 	// reserved env vars for redact config
-	EnvKeyDefaultTplEngine = "DEFAULT_TPL_ENGINE" // "fallback" value
-	EnvKeyDefaultTplPath   = "DEFAULT_TPL_PATH"   // "fallback" value
-	EnvKeyDefaultCfgPath   = "DEFAULT_CFG_PATH"   // "fallback" value
-	EnvKeyTplEngine        = "TPL_ENGINE"
-	EnvKeyTplPath          = "TPL_PATH"
-	EnvKeyCfgPath          = "CFG_PATH"
+	envKeyDefaultTplEngine = "DEFAULT_TPL_ENGINE" // "fallback" value
+	envKeyDefaultTplPath   = "DEFAULT_TPL_PATH"   // "fallback" value
+	envKeyDefaultCfgPath   = "DEFAULT_CFG_PATH"   // "fallback" value
+	envKeyTplEngine        = "TPL_ENGINE"
+	envKeyTplPath          = "TPL_PATH"
+	envKeyCfgPath          = "CFG_PATH"
 )
 
 // singleton instance
@@ -67,7 +67,7 @@ func (e *Env) ToMap() map[string]string {
 func (e *Env) ToMapFilterPrefix() map[string]string {
 	var filtered = make(map[string]string)
 	for k, v := range e.env {
-		if strings.HasPrefix(k, EnvKeyPrefix) {
+		if strings.HasPrefix(k, envKeyPrefix) {
 			filtered[k] = v
 		}
 	}
@@ -83,7 +83,7 @@ func (e *Env) Merge(env map[string]string) {
 	}
 }
 
-// ResolveTplPath returns the value for the template engine in the resolution
+// ResolveTplEngine returns the value for the template engine in the resolution
 // order defined by `resolveDefault` with an empty override param
 func (e *Env) ResolveTplEngine() string {
 	return e.ResolveTplEngineDefault("")
@@ -93,8 +93,8 @@ func (e *Env) ResolveTplEngine() string {
 // resolution order defined by `resolveDefault`
 func (e *Env) ResolveTplEngineDefault(defualtEngine string) string {
 	return e.resolveDefault(
-		EnvKeyPrefix+EnvKeyTplEngine,
-		EnvKeyPrefix+EnvKeyDefaultTplEngine,
+		envKeyPrefix+envKeyTplEngine,
+		envKeyPrefix+envKeyDefaultTplEngine,
 		defualtEngine,
 	)
 }
@@ -109,8 +109,8 @@ func (e *Env) ResolveTplPath() string {
 // resolution order defined by `resolveDefault`
 func (e *Env) ResolveTplPathDefault(defaultPath string) string {
 	return e.resolveDefault(
-		EnvKeyPrefix+EnvKeyTplPath,
-		EnvKeyPrefix+EnvKeyDefaultTplPath,
+		envKeyPrefix+envKeyTplPath,
+		envKeyPrefix+envKeyDefaultTplPath,
 		defaultPath,
 	)
 }
@@ -121,12 +121,12 @@ func (e *Env) ResolveCfgPath() string {
 	return e.ResolveCfgPathDefault("")
 }
 
-// ResolveTplPathDefault returns the value for the config path in the
+// ResolveCfgPathDefault returns the value for the config path in the
 // resolution order defined by `resolveDefault`
 func (e *Env) ResolveCfgPathDefault(defaultPath string) string {
 	return e.resolveDefault(
-		EnvKeyPrefix+EnvKeyCfgPath,
-		EnvKeyPrefix+EnvKeyDefaultCfgPath,
+		envKeyPrefix+envKeyCfgPath,
+		envKeyPrefix+envKeyDefaultCfgPath,
 		defaultPath,
 	)
 }
