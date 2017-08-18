@@ -1,3 +1,4 @@
 package redact
 
-var Version string = "dev"
+// Version redact core version
+var Version = "dev"

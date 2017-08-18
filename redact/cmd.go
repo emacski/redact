@@ -7,6 +7,7 @@ import (
 	"log"
 	"runtime"
 
+	"github.com/emacski/libgosu"
 	"github.com/emacski/redact"
 	"github.com/spf13/cobra"
 )
@@ -81,13 +82,17 @@ func handleGlobalFlags(cmd *cobra.Command) {
 
 func handlePreRenderScript(cmd *cobra.Command) error {
 	if len(renderScript) != 0 {
-		env := redact.GetEnvInstance()
+		prectx := new(redact.PreRenderContext)
 		log.Printf(cmd.CommandPath()+": executing pre-render script %s", renderScript)
-		scriptEnv, err := redact.PreRenderScriptEnv(renderScript)
+		env, err := prectx.Exec(renderScript)
+		// print script output from stdout if any
+		if len(prectx.StdOut) != 0 {
+			log.Print(prectx.StdOut)
+		}
 		if err != nil {
 			return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
 		}
-		env.Merge(scriptEnv)
+		redact.GetEnvInstance().Merge(env)
 	}
 	return nil
 }
@@ -155,7 +160,7 @@ Example: redact exec -- nobody id
 	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		log.Printf(cmd.CommandPath()+": with userspec `%s`, executing command `%s`", args[0], args[1])
-		if err = redact.ExecGosu(args[0], args[1:]); err != nil {
+		if err = libgosu.Exec(args[0], args[1:]); err != nil {
 			return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
 		}
 		return nil
@@ -196,7 +201,7 @@ Example: redact entrypoint -- nobody id
 		}
 		// command execution
 		log.Printf(cmd.CommandPath()+": with userspec `%s`, executing command `%s`", args[0], args[1])
-		if err = redact.ExecGosu(args[0], args[1:]); err != nil {
+		if err = libgosu.Exec(args[0], args[1:]); err != nil {
 			return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
 		}
 		return nil
