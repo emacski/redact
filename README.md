@@ -4,7 +4,7 @@ ReDACT
 ======
 **Reactive Docker App Configuration Toolkit**
 
-A small (~2.5MB) command line utility with the main goal of making it simple to build (or retrofit) docker applications that are easily configured at runtime.
+A small (~3.0MB) command line utility with the main goal of making it simple to build (or retrofit) docker applications that are easily configured at runtime.
 
 ## Overview
 ReDACT allows any docker application that uses or requires configuration files to be configured via environment variables at container runtime. This is achieved by constructing a configuration template that ReDACT will use in conjunction with environment variables to produce a config file for the application at runtime.
@@ -41,8 +41,9 @@ The following environment variables are used by ReDACT to specify applicable pat
 
 | Name | Description |
 | ---- | ----------- |
-| `RDCT_TPL_PATH` | Path to configuration template. Takes precedence over `RDCT_DEFAULT_TPL_PATH`. |
-| `RDCT_CFG_PATH` | Location the app expects the config file. Takes precedence over `RDCT_DEFAULT_CFG_PATH`. |
+| `RDCT_TPL_ENGINE` | Template engine to use (`go` or `mustache`). Takes precedence over `RDCT_DEFAULT_TPL_ENGINE` and cli flags. |
+| `RDCT_TPL_PATH` | Path to configuration template. Takes precedence over `RDCT_DEFAULT_TPL_PATH` and cli flags. |
+| `RDCT_CFG_PATH` | Location the app expects the config file. Takes precedence over `RDCT_DEFAULT_CFG_PATH` and cli flags. |
 
 It is always possible to supply your own complete configuration at container runtime. The path to a custom configuration template can be specified by setting the `RDCT_TPL_PATH` environment variable. See [Template File](#template-file) for creating templates.
 
@@ -56,7 +57,17 @@ docker run --rm \
   -e my_custom_kibana_var="some value" \
   emacski/kibana:latest
 ```
+By default and unless otherwise specified, the default template engine used is the `go` template engine.
 
+Example Using Custom Mustache Template
+```bash
+docker run --rm \
+  -v $PWD/custom.yaml.mustache:/custom.yaml.mustache:ro \
+  -e RDCT_TPL_ENGINE="mustache" \
+  -e RDCT_TPL_PATH="/custom.yaml.mustache" \
+  -e my_custom_kibana_var="some value" \
+  emacski/kibana:latest
+```
 ## Building ReDACT Images
 One of the goals of ReDACT is to make the implementation as simple as possible for existing and new applications alike. In most cases, ReDACT can be implemented in the following steps:
 
@@ -64,9 +75,13 @@ One of the goals of ReDACT is to make the implementation as simple as possible f
 * Modify the Dockerfile to install and configure the `redact` cli utility
 
 ### Template File
-The heart of ReDACT's dynamic configuration relies on config file templates which will be used to render actual application config files at container runtime. ReDACT is designed to support multiple template engines, but currently only supports Go templates. See https://golang.org/pkg/text/template/ for more information on Go templates.
+The heart of ReDACT's dynamic configuration relies on config file templates which will be used to render actual application config files at container runtime. ReDACT is designed to support multiple template engines, and currently supports Go (text/template) and Mustache (https://github.com/cbroglie/mustache) templates.
 
-Given this example template for Kibana:
+See https://golang.org/pkg/text/template/ for more information on Go templates.
+
+See https://mustache.github.io/ for more information on Mustache templates.
+
+Given this example Go template for Kibana:
 ```
 {{if .kibana_base_url}}
 server.basePath: "{{.kibana_base_url}}"
@@ -87,7 +102,10 @@ elasticsearch.url: "http://elatsicsearch:9200"
 
 When building the config template, the `redact render` command can be used to periodically check your work:
 ```bash
+# Go template
 redact render -q /path/to/template
+# Or mustache template
+redact render -q -e mustache /path/to/template.mustache
 ```
 **Note:** By omitting the output flag (`-o` or `--out`) like above, the template is rendered to stdout.
 
@@ -110,10 +128,12 @@ ReDACT is aware of 4 environment variables for it's internal configuration.
 
 | Name | Stage | Description |
 | ---- | ----- | ----------- |
+| `RDCT_DEFAULT_TPL_ENGINE` | Build | Default template engine to use (`go` or `mustache`). If not set, relies on cli default of `go`. |
 | `RDCT_DEFAULT_TPL_PATH` | Build | File path to the default configuration template. |
 | `RDCT_DEFAULT_CFG_PATH` | Build | File path to the default configuration file (the location the app expects it's config file). |
-| `RDCT_TPL_PATH` | Run | File path to configuration template. Intended to be set at runtime and takes precedence over `RDCT_DEFAULT_TPL_PATH`. |
-| `RDCT_CFG_PATH` | Run | File path to configuration file location. Intended to be set at runtime and takes precedence over `RDCT_DEFAULT_CFG_PATH`. |
+| `RDCT_TPL_ENGINE` | Run | Template engine to use (`go` or `mustache`). Takes precedence over `RDCT_DEFAULT_TPL_ENGINE` and cli flags. |
+| `RDCT_TPL_PATH` | Run | File path to configuration template. Intended to be set at runtime and takes precedence over `RDCT_DEFAULT_TPL_PATH` and cli flags. |
+| `RDCT_CFG_PATH` | Run | File path to configuration file location. Intended to be set at runtime and takes precedence over `RDCT_DEFAULT_CFG_PATH` and cli flags. |
 
 Dockerfile Example (from [k8s-kibana](https://github.com/emacski/k8s-kibana))
 ```dockerfile

@@ -15,8 +15,7 @@ type Template struct {
 }
 
 // New creates a new template
-func New(path string, vars map[string]string) *Template {
-	engine := NewGoEngine()
+func New(path string, vars map[string]string, engine Engine) *Template {
 	return &Template{path: path, vars: vars, engine: engine}
 }
 

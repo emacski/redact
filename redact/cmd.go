@@ -32,6 +32,7 @@ var globalQuiet bool
 var (
 	renderOutPath        string
 	renderScript         string
+	renderEngine         string
 	renderDefaultTplPath string
 	renderDefaultCfgPath string
 )
@@ -44,8 +45,9 @@ func init() {
 	renderCmd.SetUsageTemplate(usageTpl("[OPTIONS] [TEMPLATE_PATH]"))
 	renderCmd.Flags().StringVarP(&renderOutPath, "out", "o", "", "file path to render to")
 	renderCmd.Flags().StringVarP(&renderScript, "pre-render", "p", "", "EXPERIMENTAL pre-render script path")
-	renderCmd.Flags().StringVar(&renderDefaultTplPath, "default-tpl-path", "", "the default template path")
-	renderCmd.Flags().StringVar(&renderDefaultCfgPath, "default-cfg-path", "", "the default config path")
+	renderCmd.Flags().StringVarP(&renderEngine, "default-tpl-engine", "e", "go", "default template engine (go, mustache)")
+	renderCmd.Flags().StringVarP(&renderDefaultTplPath, "default-tpl-path", "t", "", "default template path")
+	renderCmd.Flags().StringVarP(&renderDefaultCfgPath, "default-cfg-path", "c", "", "default config path")
 	rootCmd.AddCommand(renderCmd)
 
 	execCmd.SetUsageTemplate(usageTpl("[OPTIONS] -- USERSPEC COMMAND [ARGS...]"))
@@ -53,8 +55,9 @@ func init() {
 
 	entrypointCmd.SetUsageTemplate(usageTpl("[OPTIONS] -- USERSPEC COMMAND [ARGS...]"))
 	entrypointCmd.Flags().StringVarP(&renderScript, "pre-render", "p", "", "EXPERIMENTAL pre-render script path")
-	entrypointCmd.Flags().StringVar(&renderDefaultTplPath, "default-tpl-path", "", "the default template path")
-	entrypointCmd.Flags().StringVar(&renderDefaultCfgPath, "default-cfg-path", "", "the default config path")
+	entrypointCmd.Flags().StringVarP(&renderEngine, "default-tpl-engine", "e", "go", "default template engine (go, mustache)")
+	entrypointCmd.Flags().StringVarP(&renderDefaultTplPath, "default-tpl-path", "t", "", "default template path")
+	entrypointCmd.Flags().StringVarP(&renderDefaultCfgPath, "default-cfg-path", "c", "", "default config path")
 	rootCmd.AddCommand(entrypointCmd)
 
 	showCmd.SetUsageTemplate(usageTpl("COMMAND"))
@@ -101,8 +104,8 @@ var rootCmd = &cobra.Command{
 var renderCmd = &cobra.Command{
 	Use:   "render",
 	Short: "Render configuration from template file",
-	Long: "Render configuration from template file.\n" +
-		"By default, the template is rendered to stdout",
+	Long: `Render configuration from template file. By default, the template
+is rendered to stdout`,
 	Args: cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		var env = redact.GetEnvInstance()
@@ -110,7 +113,9 @@ var renderCmd = &cobra.Command{
 		if err = handlePreRenderScript(cmd); err != nil {
 			return err
 		}
-		// handle config rendering
+		// resolve template engine
+		var tplEngine = env.ResolveTplEngineDefault(renderEngine)
+		// resolve template path
 		var tplPath = env.ResolveTplPathDefault(renderDefaultTplPath)
 		if len(args) != 0 {
 			tplPath = args[0]
@@ -118,18 +123,20 @@ var renderCmd = &cobra.Command{
 		if len(tplPath) == 0 {
 			return errors.New(cmd.CommandPath() + ": empty RDCT_DEFAULT_TPL_PATH or RDCT_TPL_PATH or template path arg not specified")
 		}
+		// resolve config path
 		var cfgPath = env.ResolveCfgPathDefault(renderDefaultCfgPath)
 		if len(renderOutPath) != 0 {
 			cfgPath = renderOutPath
 		}
+		// render
 		if len(cfgPath) == 0 { // no cfgPath so we render to stdout
 			log.Printf(cmd.CommandPath()+": rendering template %s", tplPath)
-			if err = redact.RenderCfgStdOut(tplPath); err != nil {
+			if err = redact.RenderCfgStdOut(tplPath, tplEngine); err != nil {
 				return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
 			}
 		} else {
 			log.Printf(cmd.CommandPath()+": rendering template %s to %s", tplPath, cfgPath)
-			if err = redact.RenderCfgFile(tplPath, cfgPath); err != nil {
+			if err = redact.RenderCfgFile(tplPath, cfgPath, tplEngine); err != nil {
 				return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
 			}
 		}
@@ -170,20 +177,24 @@ Example: redact entrypoint -- nobody id
 		if err = handlePreRenderScript(cmd); err != nil {
 			return err
 		}
-		// handle config rendering
+		// resolve template engine
+		var tplEngine = env.ResolveTplEngineDefault(renderEngine)
+		// resolve template path
 		var tplPath = env.ResolveTplPathDefault(renderDefaultTplPath)
 		if len(tplPath) == 0 {
 			return errors.New(cmd.CommandPath() + ": empty RDCT_DEFAULT_TPL_PATH or RDCT_TPL_PATH or --default-tpl-path not specified")
 		}
+		// resolve config path
 		var cfgPath = env.ResolveCfgPathDefault(renderDefaultCfgPath)
 		if len(cfgPath) == 0 {
 			return errors.New(cmd.CommandPath() + ": empty RDCT_DEFAULT_CFG_PATH or RDCT_CFG_PATH or --default-cfg-path not specified")
 		}
+		// render
 		log.Printf(cmd.CommandPath()+": rendering template %s to %s", tplPath, cfgPath)
-		if err = redact.RenderCfgFile(tplPath, cfgPath); err != nil {
+		if err = redact.RenderCfgFile(tplPath, cfgPath, tplEngine); err != nil {
 			return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
 		}
-		// handle command execution
+		// command execution
 		log.Printf(cmd.CommandPath()+": with userspec `%s`, executing command `%s`", args[0], args[1])
 		if err = redact.ExecGosu(args[0], args[1:]); err != nil {
 			return errors.New(fmt.Sprint(cmd.CommandPath()+": ", err))
