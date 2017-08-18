@@ -10,10 +10,12 @@ const (
 	// prefix for reserved env vars used to configure redact itself
 	EnvKeyPrefix = "RDCT_"
 	// reserved env vars for redact config
-	EnvKeyDefaultTplPath = "DEFAULT_TPL_PATH" // "fallback" value
-	EnvKeyDefaultCfgPath = "DEFAULT_CFG_PATH" // "fallback" value
-	EnvKeyTplPath        = "TPL_PATH"
-	EnvKeyCfgPath        = "CFG_PATH"
+	EnvKeyDefaultTplEngine = "DEFAULT_TPL_ENGINE" // "fallback" value
+	EnvKeyDefaultTplPath   = "DEFAULT_TPL_PATH"   // "fallback" value
+	EnvKeyDefaultCfgPath   = "DEFAULT_CFG_PATH"   // "fallback" value
+	EnvKeyTplEngine        = "TPL_ENGINE"
+	EnvKeyTplPath          = "TPL_PATH"
+	EnvKeyCfgPath          = "CFG_PATH"
 )
 
 // singleton instance
@@ -81,42 +83,66 @@ func (e *Env) Merge(env map[string]string) {
 	}
 }
 
-// ResolveTplPath returns the env tpl path
+// ResolveTplPath returns the value for the template engine in the resolution
+// order defined by `resolveDefault` with an empty override param
+func (e *Env) ResolveTplEngine() string {
+	return e.ResolveTplEngineDefault("")
+}
+
+// ResolveTplEngineDefault returns the value for the template engine in in the
+// resolution order defined by `resolveDefault`
+func (e *Env) ResolveTplEngineDefault(defualtEngine string) string {
+	return e.resolveDefault(
+		EnvKeyPrefix+EnvKeyTplEngine,
+		EnvKeyPrefix+EnvKeyDefaultTplEngine,
+		defualtEngine,
+	)
+}
+
+// ResolveTplPath returns the value for the template path in the resolution
+// order defined by `resolveDefault` with an empty override param
 func (e *Env) ResolveTplPath() string {
 	return e.ResolveTplPathDefault("")
 }
 
-// ResolveTplPathDefault returns the value for the template path in the
-// following order: returns the env tpl path if not empty. Otherwise, returns
-// the `defaultPath` value if not empty. Otherwise, returns the env default tpl
-// path or empty string
+// ResolveTplPathDefault returns the value for the template path in in the
+// resolution order defined by `resolveDefault`
 func (e *Env) ResolveTplPathDefault(defaultPath string) string {
-	path, err := e.FindE(EnvKeyPrefix + EnvKeyTplPath)
-	if err != nil {
-		if len(defaultPath) != 0 {
-			return defaultPath
-		}
-		path = e.Find(EnvKeyPrefix + EnvKeyDefaultTplPath)
-	}
-	return path
+	return e.resolveDefault(
+		EnvKeyPrefix+EnvKeyTplPath,
+		EnvKeyPrefix+EnvKeyDefaultTplPath,
+		defaultPath,
+	)
 }
 
-// ResolveCfgPath returns the env cfg path
+// ResolveCfgPath returns the value for the config path in the resolution
+// order defined by `resolveDefault` with an empty override param
 func (e *Env) ResolveCfgPath() string {
 	return e.ResolveCfgPathDefault("")
 }
 
 // ResolveTplPathDefault returns the value for the config path in the
-// following order: returns the env cfg path if not empty. Otherwise, returns
-// the `defaultPath` value if not empty. Otherwise, returns the env default cfg
-// path or empty string
+// resolution order defined by `resolveDefault`
 func (e *Env) ResolveCfgPathDefault(defaultPath string) string {
-	path, err := e.FindE(EnvKeyPrefix + EnvKeyCfgPath)
+	return e.resolveDefault(
+		EnvKeyPrefix+EnvKeyCfgPath,
+		EnvKeyPrefix+EnvKeyDefaultCfgPath,
+		defaultPath,
+	)
+}
+
+// resolveDefault returns a value in the following order: returns the value of
+// the environment variable specified by `varName` if not empty. Otherwise,
+// returns the value of the `defaultOverride` param if not empty. If
+// `defaultOverride` is empty, return the value of the environment variable
+// specified by `defaultVarName` or empty string.
+func (e *Env) resolveDefault(varName, defaultVarName, defaultOverride string) string {
+	val, err := e.FindE(varName)
 	if err != nil {
-		if len(defaultPath) != 0 {
-			return defaultPath
+		if len(defaultOverride) != 0 {
+			return defaultOverride
 		}
-		path = e.Find(EnvKeyPrefix + EnvKeyDefaultCfgPath)
+		val = e.Find(defaultVarName)
 	}
-	return path
+	return val
 }
