@@ -26,6 +26,9 @@ Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
 Use "{{.CommandPath}} COMMAND --help" for more information about a command.{{end}}
 `
 
+var versionString = fmt.Sprintf("redact version %s %s %s %s",
+	version, runtime.GOOS, runtime.GOARCH, runtime.Compiler)
+
 // global flags
 var globalQuiet bool
 
@@ -177,6 +180,7 @@ Example: redact entrypoint -- nobody id
          redact entrypoint -- nobody:root id`,
 	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		log.Print(versionString)
 		var env = redact.GetEnvInstance()
 		// handle pre-render script
 		if err = handlePreRenderScript(cmd); err != nil {
@@ -236,7 +240,6 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Printf("redact version %s %s %s %s", redact.Version, runtime.GOOS,
-			runtime.GOARCH, runtime.Compiler)
+		log.Print(versionString)
 	},
 }
