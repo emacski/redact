@@ -5,6 +5,8 @@ import (
 	"runtime"
 )
 
+var version = "dev"
+
 func init() {
 	runtime.GOMAXPROCS(1)
 	runtime.LockOSThread()

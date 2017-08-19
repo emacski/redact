@@ -16,7 +16,7 @@ build: pull
 				&& cd $(BIN) && go get -d && cd .. \
 				&& CGO_ENABLED=0 go test \
 				&& cd $(BIN) \
-				&& GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X redact.Version=$(VERSION)" -v'
+				&& GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=$(VERSION)" -v'
 
 shell: pull
 	@docker run --rm -ti --init \
