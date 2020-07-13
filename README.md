@@ -1,7 +1,9 @@
-[![Build Status](https://travis-ci.org/emacski/redact.svg?branch=master)](https://travis-ci.org/emacski/redact.svg?branch=master)
+# DEPRECATED
 
-ReDACT
-======
+This project is **obsolete** and no longer maintained.
+
+## ReDACT
+
 **Reactive Docker App Configuration Toolkit**
 
 A small (~3.0MB) command line utility with the main goal of making it simple to build (or retrofit) docker applications that are easily configured at runtime.
